@@ -1,6 +1,9 @@
-const makeWASocket = require("@whiskeysockets/baileys").default;
-const { useMultiFileAuthState } = require("@whiskeysockets/baileys");
-const qrcode = require("qrcode-terminal");
+const {
+  default: makeWASocket,
+  useMultiFileAuthState,
+  DisconnectReason
+} = require("@whiskeysockets/baileys");
+
 const http = require("http");
 
 async function startBot() {
@@ -8,29 +11,23 @@ async function startBot() {
 
   const sock = makeWASocket({
     auth: state,
+    printQRInTerminal: false
   });
 
   sock.ev.on("creds.update", saveCreds);
 
-  sock.ev.on("connection.update", ({ qr, connection }) => {
-    if (qr) {
-      qrcode.generate(qr, { small: true });
-    }
+  if (!sock.authState.creds.registered) {
+    const phoneNumber = "967701770662"; // ضع رقمك هنا مع مفتاح الدولة
+    const code = await sock.requestPairingCode(phoneNumber);
+    console.log("رمز الاقتران:", code);
+  }
 
+  sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {
     if (connection === "open") {
-      console.log("✅ WhatsApp Bot Connected");
+      console.log("✅ تم الاتصال بواتساب");
     }
-  });
-}
 
-startBot();
+    if (
+     
 
-const PORT = process.env.PORT || 3000;
-
-http.createServer((req, res) => {
-  res.writeHead(200, { "Content-Type": "text/plain" });
-  res.end("WhatsApp Bot is Running");
-}).listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
 
