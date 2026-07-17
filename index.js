@@ -4,29 +4,33 @@ const {
   DisconnectReason
 } = require("@whiskeysockets/baileys");
 
-const http = require("http");
 const pino = require("pino");
+const http = require("http");
 
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState("session");
 
   const sock = makeWASocket({
     auth: state,
-    printQRInTerminal: true,
-    logger: pino({ level: "silent" })
+    logger: pino({ level: "silent" }),
+    printQRInTerminal: true
   });
 
   sock.ev.on("creds.update", saveCreds);
 
-  sock.ev.on("connection.update", ({ connection, lastDisconnect }) => {
-    if (connection === "open") {
-      console.log("✅ تم الاتصال بنجاح وتفعيل البوت بالواتساب!");
-    } else if (connection === "close") {
-      const shouldReconnect =
-        (lastDisconnect?.error)?.output?.statusCode !==
-        DisconnectReason.loggedOut;
+  sock.ev.on("connection.update", ({ connection, qr, lastDisconnect }) => {
+    if (qr) {
+      console.log("📱 امسح رمز QR الذي يظهر في السجل.");
+    }
 
-      console.log("❌ تم قطع الاتصال، جاري إعادة المحاولة:", shouldReconnect);
+    if (connection === "open") {
+      console.log("✅ تم الاتصال بواتساب بنجاح!");
+    }
+
+    if (connection === "close") {
+      const shouldReconnect =
+        lastDisconnect?.error?.output?.statusCode !==
+        DisconnectReason.loggedOut;
 
       if (shouldReconnect) {
         startBot();
@@ -40,8 +44,7 @@ startBot();
 const PORT = process.env.PORT || 3000;
 
 http.createServer((req, res) => {
-  res.writeHead(200, { "Content-Type": "text/plain" });
-  res.end("WhatsApp Bot is Running Successfully!\n");
+  res.end("WhatsApp Bot is Running");
 }).listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
